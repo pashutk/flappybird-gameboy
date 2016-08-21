@@ -23,11 +23,11 @@ void initGso(GameSpriteObject *gso) {
   lastFreeTileValue = *(gso->lastFreeTilePointer);
   tileSum = gso->width * gso->height;
   
-  set_sprite_data(lastFreeTileValue, tileSum, gb_tile_data/*gso->tileDataPointer*/);
+  set_sprite_data(lastFreeTileValue, tileSum, gso->tileDataPointer);
   // Refresh lastFreeTile value
-  *(gso->lastFreeTilePointer) = lastFreeTileValue + tileSum; // replace +=
+  *(gso->lastFreeTilePointer) += tileSum;
   // Link tiles and sprites
-  for (i = 0; i < tileSum; i++) {
+  for (i = lastFreeTileValue; i < lastFreeTileValue + tileSum; i++) {
     set_sprite_tile(i, i);
   }
 }
@@ -37,8 +37,9 @@ void newGso(GameSpriteObject *gsoPointer,
             UINT8 height,
             UINT8 *tileDataPointer,
             UINT8 *lastFreeTilePointer) {
-  // Without this line height === 0 ¯\_(ツ)_/¯
+  // Without this lines some params === 0 ¯\_(ツ)_/¯
   gsoPointer->height;
+  gsoPointer->tileDataPointer;
 
   gsoPointer->width = width;
   gsoPointer->height = height;
@@ -49,24 +50,15 @@ void newGso(GameSpriteObject *gsoPointer,
   initGso(gsoPointer);
 }
 
-void shift_sprite(UBYTE x, UBYTE y)
-{
-  UBYTE i, j, c = 0;
+// Work correctly with 8*8 sprites
+void moveGso(GameSpriteObject *gso, UINT8 x, UINT8 y) {
+  UBYTE i, j, c;
+  c = gso->firstTileNum;
 
-  for (i = 0; i < 3; ++i) {
-    for (j = 0; j < 3; ++j) {
+  for (i = 0; i < gso->height; ++i) {
+    for (j = 0; j < gso->width; ++j) {
       move_sprite(c++, x + 8 * j, y + 8 * i);
     }
-  }
-}
-
-void init_sprite(unsigned char *tile_data)
-{
-  UBYTE i;
-  set_sprite_data(0, 9, tile_data);
-
-  for (i = 0; i < 9; ++i) {
-    set_sprite_tile(i, i);
   }
 }
 
@@ -89,18 +81,29 @@ void main()
 
   UINT8 lastFreeTile = 0;
 
-  UINT8 playerWidth = 3;
-  UINT8 playerHeight = 3;
-  UINT8 *playerTileDataPointer = &gb_tile_data;
+  UINT8 playerWidth = flbird_tile_map_width;
+  UINT8 playerHeight = flbird_tile_map_height;
+  UINT8 *playerTileDataPointer = &flbird_tile_data;
   GameSpriteObject player;
 
+  GameSpriteObject pipeBottom;
+  GameSpriteObject pipeBody;
+
   newGso(&player, playerWidth, playerHeight, playerTileDataPointer, &lastFreeTile);
+
+  newGso(&pipeBottom, fltopbottom_tile_map_width, fltopbottom_tile_map_height, fltopbottom_tile_data, &lastFreeTile);
+  moveGso(&pipeBottom, 70, 56);
+
+  // Sprite graphic have a restriction: only 40 tiles on screen.
+  // Defenitely need to use background layer
+  // set_bkg_data(0, flbody_tile_count, flbody_tile_data);
+  // set_bkg_tiles()
 
   SPRITES_8x8;
   SHOW_BKG;
   SHOW_SPRITES;
   DISPLAY_ON;
-
+  
   while(resume) {
     j = joypad();
     if (j & J_A && !delay) {
@@ -111,9 +114,9 @@ void main()
     }
 
     if (j & J_RIGHT) 
-      x++;
+      x+=3;
     if (j & J_LEFT) 
-      x--;
+      x-=3;
     if (clock() > delaying) 
       delay = FALSE;
     t = clock() - time_backup;
@@ -124,7 +127,7 @@ void main()
     y = yd + vcoord;
     y = gh - y;
 
-    shift_sprite(x, y);
+    moveGso(&player, x, y);
     if (y < 10 || y > GRAPHICS_HEIGHT) {
       resume = 0;
       printf("FAGGOT");

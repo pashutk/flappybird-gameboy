@@ -7,6 +7,14 @@
 
 #include "tiledata.h"
 
+int abs(int num) {
+  if(num < 0)
+    return -num;
+  else
+    return num;
+}
+
+
 typedef struct GameSpriteObject_ {
   UBYTE width;
   UBYTE height;
@@ -62,15 +70,17 @@ void moveGso(GameSpriteObject *gso, UINT8 x, UINT8 y) {
   }
 }
 
+// TODO: increase render speed by using line-by-line drawing (vertical)
 void drawPipe(UINT8 x, UINT8 level) {
+  const UINT8 pipeWidth = 5;
   UINT8 i, j;
-  UINT8 randomBkgTiles[31];
+  UINT8 randomBkgTiles[18 * 5];
   UINT8 tileNum = 0;
   UINT8 gap = 6;
   UINT8 capHeight = 3;
 
   for (j=0; j != 18; j++) {
-    for (i=0; i != 31; i++) {
+    for (i=0; i != pipeWidth; i++) {
       if (j <= level - gap - capHeight || j > level + capHeight) {
         // Draw pipe body
         if (i == 0) {
@@ -173,10 +183,10 @@ void drawPipe(UINT8 x, UINT8 level) {
       } else {
         tileNum = 0;
       }
-      randomBkgTiles[i] = tileNum;
+      randomBkgTiles[pipeWidth * j + i] = tileNum;
     }
-    set_bkg_tiles(x, j, 5, 1, randomBkgTiles); // Need to optimize inserting same sprites
   }
+  set_bkg_tiles(x, 0, pipeWidth, 18, randomBkgTiles);
 }
 
 void flushRow(UINT8 row) {
@@ -193,6 +203,11 @@ void flushBkg() {
   for (i = 0; i < 32; i++) {
     flushRow(i);
   }
+}
+
+int randBetween(UINT8 min, UINT8 max) {
+  int r = (int) max - min;
+  return (rand() % r) + (int) min;
 }
 
 void main()
@@ -214,6 +229,9 @@ void main()
   UINT8 i = 0;
 
   UINT8 lastFreeTile = 0;
+  UINT8 scrollPositionX = 0;
+  UINT8 firstPipeRerenderPoint = 0;
+  UINT8 secondPipeRerenderPoint = 64;
 
   UINT8 playerWidth = flbird_tile_map_width;
   UINT8 playerHeight = flbird_tile_map_height;
@@ -222,23 +240,14 @@ void main()
 
   newGso(&player, playerWidth, playerHeight, playerTileDataPointer, &lastFreeTile);
 
-  // Sprite graphic have a restriction: only 40 tiles on screen.
-  // Defenitely need to use background layer
   set_bkg_data(1, flbody_tile_count, flbody_tile_data);
   set_bkg_data(5, flbottomtop_tile_count, flbottomtop_tile_data);
   set_bkg_data(18, fltopbottom_tile_count, fltopbottom_tile_data);
-  // for(i = 0; i < flbody_tile_count; i++) {
-    
-    // set_bkg_tiles(0, 0, 31, 31, flbody_map_data);
-  // }
 
   flushBkg();
 
-  drawPipe(10, 10);
-
-  drawPipe(27, 13);
-
-  
+  drawPipe(10, randBetween(8, 12));
+  drawPipe(27, randBetween(8, 12));
 
   SPRITES_8x8;
   SHOW_BKG;
@@ -246,7 +255,18 @@ void main()
   DISPLAY_ON;
   
   while(resume) {
-    scroll_bkg(3, 0);
+
+    move_bkg(scrollPositionX, 0);
+    scrollPositionX += 3;
+
+    if (scrollPositionX > firstPipeRerenderPoint && scrollPositionX < firstPipeRerenderPoint + 3) {
+      drawPipe(27, randBetween(8, 12));
+    }
+    if (scrollPositionX > secondPipeRerenderPoint && scrollPositionX < secondPipeRerenderPoint + 3) {
+      drawPipe(10, randBetween(8, 12));
+    }
+
+    
     j = joypad();
     if (j & J_A && !delay) {
       yd = gh - y;

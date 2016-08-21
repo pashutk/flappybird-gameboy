@@ -62,6 +62,139 @@ void moveGso(GameSpriteObject *gso, UINT8 x, UINT8 y) {
   }
 }
 
+void drawPipe(UINT8 x, UINT8 level) {
+  UINT8 i, j;
+  UINT8 randomBkgTiles[31];
+  UINT8 tileNum = 0;
+  UINT8 gap = 6;
+  UINT8 capHeight = 3;
+
+  for (j=0; j != 18; j++) {
+    for (i=0; i != 31; i++) {
+      if (j <= level - gap - capHeight || j > level + capHeight) {
+        // Draw pipe body
+        if (i == 0) {
+          tileNum = 1;
+        } else if (i == 1 || i == 2) {
+          tileNum = 2;
+        } else if (i == 3) {
+          tileNum = 3;
+        } else if (i == 4) {
+          tileNum = 4;
+        } else {
+          tileNum = 0;
+        }
+      } else if (j <= level - gap && j > level - gap - capHeight) {
+        // Draw top pipe cap
+        if (j == level - gap - 2) {
+          if (i == 0) {
+            tileNum = 18;
+          } else if (i == 1) {
+            tileNum = 19;
+          } else if (i == 2) {
+            tileNum = 20;
+          } else if (i == 3) {
+            tileNum = 21;
+          } else if (i == 4) {
+            tileNum = 22;
+          } else {
+            tileNum = 0;
+          }
+        } else if (j == level - gap - 1) {
+          if (i == 0) {
+            tileNum = 23;
+          } else if (i == 1) {
+            tileNum = 24;
+          } else if (i == 2) {
+            tileNum = 25;
+          } else if (i == 3) {
+            tileNum = 25;
+          } else if (i == 4) {
+            tileNum = 26;
+          } else {
+            tileNum = 0;
+          }
+        } else if (j == level - gap) {
+          if (i == 0) {
+            tileNum = 27;
+          } else if (i == 1) {
+            tileNum = 28;
+          } else if (i == 2) {
+            tileNum = 28;
+          } else if (i == 3) {
+            tileNum = 29;
+          } else if (i == 4) {
+            tileNum = 30;
+          } else {
+            tileNum = 0;
+          }
+        }
+      } else if (j > level && j <= level + capHeight) {
+        // Draw bottom pipe cap 
+        if (j == level + 1) {
+          if (i == 0) {
+            tileNum = 5;
+          } else if (i == 3) {
+            tileNum = 7;
+          } else if (i == 4) {
+            tileNum = 8;
+          } else if (i == 1 || i == 2) {
+            tileNum = 6;
+          } else {
+            tileNum = 0;
+          }
+        } else if (j == level + 2) {
+          if (i == 0) {
+            tileNum = 9;
+          } else if (i == 3) {
+            tileNum = 11;
+          } else if (i == 4) {
+            tileNum = 12;
+          } else if (i == 1 || i == 2) {
+            tileNum = 10;
+          } else {
+            tileNum = 0;
+          }
+        } else if (j == level + 3) {
+          if (i == 0) {
+            tileNum = 13;
+          } else if (i == 1) {
+            tileNum = 14;
+          } else if (i == 2) {
+            tileNum = 15;
+          } else if (i == 3) {
+            tileNum = 16;
+          } else if (i == 4) {
+            tileNum = 17;
+          } else {
+            tileNum = 0;
+          }
+        }
+      } else {
+        tileNum = 0;
+      }
+      randomBkgTiles[i] = tileNum;
+    }
+    set_bkg_tiles(x, j, 5, 1, randomBkgTiles); // Need to optimize inserting same sprites
+  }
+}
+
+void flushRow(UINT8 row) {
+  UINT8 i = 0;
+  UINT8 randomBkgTiles[31];
+  for (i = 0; i < 32; i++) {
+    randomBkgTiles[i] = 0;
+  }
+  set_bkg_tiles(0, row, 31, 1, randomBkgTiles);
+}
+
+void flushBkg() {
+  UINT8 i = 0;
+  for (i = 0; i < 32; i++) {
+    flushRow(i);
+  }
+}
+
 void main()
 {
   const JUMP_DELAY = 15;
@@ -78,6 +211,7 @@ void main()
   UBYTE resume = TRUE;
   UBYTE yi = 0;
   UBYTE t = 0, u = 0;
+  UINT8 i = 0;
 
   UINT8 lastFreeTile = 0;
 
@@ -86,18 +220,25 @@ void main()
   UINT8 *playerTileDataPointer = &flbird_tile_data;
   GameSpriteObject player;
 
-  GameSpriteObject pipeBottom;
-  GameSpriteObject pipeBody;
-
   newGso(&player, playerWidth, playerHeight, playerTileDataPointer, &lastFreeTile);
-
-  newGso(&pipeBottom, fltopbottom_tile_map_width, fltopbottom_tile_map_height, fltopbottom_tile_data, &lastFreeTile);
-  moveGso(&pipeBottom, 70, 56);
 
   // Sprite graphic have a restriction: only 40 tiles on screen.
   // Defenitely need to use background layer
-  // set_bkg_data(0, flbody_tile_count, flbody_tile_data);
-  // set_bkg_tiles()
+  set_bkg_data(1, flbody_tile_count, flbody_tile_data);
+  set_bkg_data(5, flbottomtop_tile_count, flbottomtop_tile_data);
+  set_bkg_data(18, fltopbottom_tile_count, fltopbottom_tile_data);
+  // for(i = 0; i < flbody_tile_count; i++) {
+    
+    // set_bkg_tiles(0, 0, 31, 31, flbody_map_data);
+  // }
+
+  flushBkg();
+
+  drawPipe(10, 10);
+
+  drawPipe(27, 13);
+
+  
 
   SPRITES_8x8;
   SHOW_BKG;
@@ -105,6 +246,7 @@ void main()
   DISPLAY_ON;
   
   while(resume) {
+    scroll_bkg(3, 0);
     j = joypad();
     if (j & J_A && !delay) {
       yd = gh - y;
@@ -130,7 +272,7 @@ void main()
     moveGso(&player, x, y);
     if (y < 10 || y > GRAPHICS_HEIGHT) {
       resume = 0;
-      printf("FAGGOT");
+      // printf("FAGGOT");
     }
   }
 }

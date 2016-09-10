@@ -312,10 +312,6 @@ void main()
       delay = TRUE;
     }
 
-    // if (j & J_RIGHT)
-    //   x+=3;
-    // if (j & J_LEFT)
-    //   x-=3;
     if (clock() > delaying)
       delay = FALSE;
     t = clock() - time_backup;
@@ -334,24 +330,12 @@ void main()
       if (checkPipeCollision(y, randomLevel2) == 1) {
         resume = 0;
       }
-      if (resume == 0) {
-        // printf("f%d\n", scrollPositionX);
-      }
     } else if (scrollPositionX >= startSecondPipeCollisionX && scrollPositionX <= endSecondPipeCollisionX) {
       if (checkPipeCollision(y, randomLevel1) == 1) {
         resume = 0;
       }
-      if (resume == 0) {
-        // printf("s%d\n", scrollPositionX);
-      }
     } else {
       resume = checkCollision(y);
     }
-    // wait_vbl_done();
-    // wait_vbl_done();
-    // wait_vbl_done();
-    // wait_vbl_done();
-    // wait_vbl_done();
-    // wait_vbl_done();
   }
 }

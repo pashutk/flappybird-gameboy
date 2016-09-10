@@ -7,6 +7,8 @@
 
 #include "tiledata.h"
 
+const UINT8 pipeGap = 8;
+
 int abs(int num) {
   if(num < 0)
     return -num;
@@ -71,19 +73,19 @@ void moveGso(GameSpriteObject *gso, UINT8 x, UINT8 y) {
 }
 
 // TODO: increase render speed by using line-by-line drawing (vertical)
-void drawPipe(UINT8 x, UINT8 level) {
+void drawPipe(UINT8 x, INT8 level) {
   const UINT8 pipeWidth = 5;
-  UINT8 i, j;
+  const INT8 capHeight = 3;
+  INT8 i, j;
   UINT8 pipeTiles[18 * 5];
   UINT8 tileNum = 0;
-  UINT8 gap = 6;
-  UINT8 capHeight = 3;
 
   // printf("%d\n", level);
 
-  for (j=0; j != 18; j++) {
-    for (i=0; i != pipeWidth; i++) {
-      if (j + capHeight <= level || j > level + gap + capHeight) {
+  for (j = 0; j != 18; j++) {
+    for (i = 0; i != pipeWidth; i++) {
+      tileNum = 0;
+      if (j + capHeight <= level || j > level + pipeGap + capHeight) {
         // Draw pipe body
         if (i == 0) {
           tileNum = 1;
@@ -93,11 +95,11 @@ void drawPipe(UINT8 x, UINT8 level) {
           tileNum = 3;
         } else if (i == 4) {
           tileNum = 4;
-        } else {
-          tileNum = 0;
         }
-      } else if (j <= level && j + capHeight > level) {
+        // printf("b%d\n", (UWORD)j);
+      } else if (j <= level && j > level - capHeight) {
         // Draw top pipe cap
+        // printf("t%d\n", (UWORD)capHeight);
         if (j + 2 == level) {
           if (i == 0) {
             tileNum = 18;
@@ -109,8 +111,6 @@ void drawPipe(UINT8 x, UINT8 level) {
             tileNum = 21;
           } else if (i == 4) {
             tileNum = 22;
-          } else {
-            tileNum = 0;
           }
         } else if (j + 1 == level) {
           if (i == 0) {
@@ -123,9 +123,8 @@ void drawPipe(UINT8 x, UINT8 level) {
             tileNum = 25;
           } else if (i == 4) {
             tileNum = 26;
-          } else {
-            tileNum = 0;
           }
+
         } else if (j == level) {
           if (i == 0) {
             tileNum = 27;
@@ -137,13 +136,12 @@ void drawPipe(UINT8 x, UINT8 level) {
             tileNum = 29;
           } else if (i == 4) {
             tileNum = 30;
-          } else {
-            tileNum = 0;
           }
         }
-      } else if (j > level + gap && j <= level + gap + capHeight) {
+      } else if (j > level + pipeGap && j <= level + pipeGap + capHeight) {
         // Draw bottom pipe cap
-        if (j == level + gap + 1) {
+        // printf("l%d\n", (UWORD)j);
+        if (j == level + pipeGap + 1) {
           if (i == 0) {
             tileNum = 5;
           } else if (i == 3) {
@@ -152,10 +150,8 @@ void drawPipe(UINT8 x, UINT8 level) {
             tileNum = 8;
           } else if (i == 1 || i == 2) {
             tileNum = 6;
-          } else {
-            tileNum = 0;
           }
-        } else if (j == level + gap + 2) {
+        } else if (j == level + pipeGap + 2) {
           if (i == 0) {
             tileNum = 9;
           } else if (i == 3) {
@@ -164,10 +160,8 @@ void drawPipe(UINT8 x, UINT8 level) {
             tileNum = 12;
           } else if (i == 1 || i == 2) {
             tileNum = 10;
-          } else {
-            tileNum = 0;
           }
-        } else if (j == level + gap + 3) {
+        } else if (j == level + pipeGap + 3) {
           if (i == 0) {
             tileNum = 13;
           } else if (i == 1) {
@@ -178,12 +172,8 @@ void drawPipe(UINT8 x, UINT8 level) {
             tileNum = 16;
           } else if (i == 4) {
             tileNum = 17;
-          } else {
-            tileNum = 0;
           }
         }
-      } else {
-        tileNum = 0;
       }
       pipeTiles[pipeWidth * j + i] = tileNum;
     }
@@ -223,18 +213,18 @@ UBYTE pipeRandomLevel() {
 }
 
 UINT8 checkCollision(DWORD y) {
-  // if (y < 10 || y > GRAPHICS_HEIGHT) {
-    // return 0;
-  // } else {
+  if (y < 10 || y > GRAPHICS_HEIGHT) {
+    return 0;
+  } else {
     return 1;
-  // }
+  }
 }
 
-UINT8 checkPipeCollision(DWORD y, UWORD level) {
-  if (y < level * 8 || y > level * 8 + 6 * 8) {
-    // printf("%d\n", (UINT8)level);
+UINT8 checkPipeCollision(DWORD y, INT8 level) {
+  if (y < level * 8 + flbird_tile_map_height * 8 || y > level * 8 + pipeGap * 8) {
+    // printf("%d\n", level);
     // printf("%d\n", y);
-    return 0;
+    return 1;
   } else {
     return 0;
   }
@@ -257,6 +247,8 @@ void main()
   UBYTE yi = 0;
   UBYTE t = 0, u = 0;
   UINT8 i = 0;
+
+  INT8 needToCheckPipeCollision = 0;
 
   UINT8 lastFreeTile = 0;
   UWORD scrollPositionX = 0;
@@ -309,6 +301,7 @@ void main()
     if (scrollPositionX > secondPipeRerenderPoint && scrollPositionX <= secondPipeRerenderPoint + screenScrollShift) {
       randomLevel2 = pipeRandomLevel();
       drawPipe(10, randomLevel2);
+      needToCheckPipeCollision = 1;
     }
 
     j = joypad();
@@ -334,14 +327,18 @@ void main()
     y = gh - y;
 
     moveGso(&player, x, y);
-    // if (scrollPositionX >= startFirstPipeCollisionX && scrollPositionX <= endFirstPipeCollisionX) {
-      // resume = checkPipeCollision(y, randomLevel1);
+
+    if (needToCheckPipeCollision == 0) {
+      resume = checkCollision(y);
+    } else if (scrollPositionX >= startFirstPipeCollisionX && scrollPositionX <= endFirstPipeCollisionX) {
+      if (checkPipeCollision(y, randomLevel2) == 1) {
+        resume = 0;
+      }
       if (resume == 0) {
         // printf("f%d\n", scrollPositionX);
       }
-    // } else
-    if (scrollPositionX >= startSecondPipeCollisionX && scrollPositionX <= endSecondPipeCollisionX) {
-      if (checkPipeCollision(y, randomLevel2) == 1) {
+    } else if (scrollPositionX >= startSecondPipeCollisionX && scrollPositionX <= endSecondPipeCollisionX) {
+      if (checkPipeCollision(y, randomLevel1) == 1) {
         resume = 0;
       }
       if (resume == 0) {
@@ -350,6 +347,11 @@ void main()
     } else {
       resume = checkCollision(y);
     }
-    wait_vbl_done();
+    // wait_vbl_done();
+    // wait_vbl_done();
+    // wait_vbl_done();
+    // wait_vbl_done();
+    // wait_vbl_done();
+    // wait_vbl_done();
   }
 }

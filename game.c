@@ -8,6 +8,7 @@
 #include "tiledata.h"
 
 const UINT8 pipeGap = 8;
+const JUMP_DELAY = 15;
 
 int abs(int num) {
   if(num < 0)
@@ -212,46 +213,51 @@ UBYTE pipeRandomLevel() {
   return num;
 }
 
-UINT8 checkCollision(DWORD y) {
+BOOLEAN checkCollision(DWORD y) {
   if (y < 10 || y > GRAPHICS_HEIGHT) {
-    return 0;
+    return FALSE;
   } else {
-    return 1;
+    return TRUE;
   }
 }
 
-UINT8 checkPipeCollision(DWORD y, INT8 level) {
+BOOLEAN checkPipeCollision(DWORD y, INT8 level) {
   if (y < level * 8 + flbird_tile_map_height * 8 || y > level * 8 + pipeGap * 8) {
-    return 1;
+    return TRUE;
   } else {
-    return 0;
+    return FALSE;
   }
 }
 
 enum GameState {
   TUTORIAL,
-  MAIN
+  MAIN,
+  FAIL
 };
 
-void main()
-{
-  const JUMP_DELAY = 15;
-  const DOWNTEMPO_COEFFICIENT = 70;
-  const DWORD v0 = 200;
-  UBYTE x = 50, j;
-  DWORD y = 0;
-  DWORD coord = 0, vcoord = 0, dx0 = 150, dx1 = 150;
-  UBYTE yd = 50;
-  DWORD time_backup = 0;
-  DWORD g = 10, gh = 144;
-  DWORD delaying = 0;
-  UBYTE delay = FALSE;
-  UBYTE resume = TRUE;
-  UBYTE yi = 0;
-  UBYTE t = 0, u = 0;
-  UINT8 i = 0;
+INT16 getPlayerYPos(UINT8 t, UINT8 yd) {
+  const INT8 DOWNTEMPO_COEFFICIENT = 70;
+  const INT32 v0 = 200;
+  const INT8 g = 10;
+  INT32 dx0, dx1;
 
-  INT8 needToCheckPipeCollision = 0;
+  dx0 = v0 * t / DOWNTEMPO_COEFFICIENT;
+  dx1 = g * t * t / DOWNTEMPO_COEFFICIENT / 2;
+  return GRAPHICS_HEIGHT - (yd + (dx0 - dx1));
+}
+
+
+
+void main() {
+  UBYTE playerXPosition = 50, j;
+  DWORD y = 0;
+  UBYTE yd = 50;
+  UINT16 time_backup = 0, delaying = 0;
+  BOOLEAN delay = FALSE, resume = TRUE;
+  UBYTE yi = 0;
+  UINT8 i = 0, t = 0, u = 0;
+
+  BOOLEAN needToCheckPipeCollision = FALSE;
 
   UINT8 lastFreeTile = 0;
   UWORD scrollPositionX = 0;
@@ -259,27 +265,23 @@ void main()
   UWORD endFirstPipeCollisionX;
   UWORD startSecondPipeCollisionX;
   UWORD endSecondPipeCollisionX;
-  UINT8 firstPipeRerenderPoint = 0;
-  UINT8 secondPipeRerenderPoint = 128;
-  UINT8 screenScrollShift = 4;
-  UBYTE randomLevel1;
-  UBYTE randomLevel2;
+  const UINT8 firstPipeRerenderPoint = 0;
+  const UINT8 secondPipeRerenderPoint = 128;
+  const UINT8 screenScrollShift = 4;
+  UINT8 randomLevel1;
+  UINT8 randomLevel2;
   BOOLEAN resumeGame = TRUE;
   const UINT8 initialTutorialArrowPosition = 176;
   UINT8 tutorialArrowPosition = initialTutorialArrowPosition;
-  const UINT8 tutorialArrowShownPosition = 140;
+  const UINT8 tutorialArrowShownPosition = 120;
   const int arrowVerticalPosition = 68;
 
   enum GameState gameState = TUTORIAL;
-
-  UINT8 playerWidth = flbird_tile_map_width;
-  UINT8 playerHeight = flbird_tile_map_height;
-  UINT8 *playerTileDataPointer = &flbird_tile_data;
   GameSpriteObject player;
   GameSpriteObject arrow;
   GameSpriteObject aButton;
 
-  newGso(&player, playerWidth, playerHeight, playerTileDataPointer, &lastFreeTile);
+  newGso(&player, flbird_tile_map_width, flbird_tile_map_height, &flbird_tile_data, &lastFreeTile);
   newGso(&arrow, arrow_tile_map_width, arrow_tile_map_height, &arrow_tile_data, &lastFreeTile);
   newGso(&aButton, ab_tile_map_width, ab_tile_map_height, &ab_tile_data, &lastFreeTile);
 
@@ -294,15 +296,18 @@ void main()
   SHOW_SPRITES;
   DISPLAY_ON;
 
-  startFirstPipeCollisionX = 10 * 8 - (x + (3 * 4));
+  startFirstPipeCollisionX = 10 * 8 - (playerXPosition + (3 * 4));
   endFirstPipeCollisionX = startFirstPipeCollisionX + 40 + 2 * 8;
-  startSecondPipeCollisionX = 255 - 40 - x - 3 * 4;
+  startSecondPipeCollisionX = 255 - 40 - playerXPosition - 3 * 4;
   endSecondPipeCollisionX = startSecondPipeCollisionX + 40 + 2 * 8;
 
   moveGso(&arrow, tutorialArrowPosition, arrowVerticalPosition);
   moveGso(&aButton, 168, 80);
 
-  while(resume) {
+  playerXPosition = 0;
+  y = 144-50;
+
+  while(1) {
     // Main loop
     j = joypad();
 
@@ -311,6 +316,11 @@ void main()
         tutorialArrowPosition -= 4;
         moveGso(&arrow, tutorialArrowPosition, arrowVerticalPosition);
         moveGso(&aButton, tutorialArrowPosition - 3, 80);
+      }
+
+      if (playerXPosition < 50) {
+        playerXPosition += 4;
+        moveGso(&player, playerXPosition, y);
       }
 
       if (j & J_A && !delay) {
@@ -322,14 +332,12 @@ void main()
     }
 
     // Game loop
-    if (gameState == MAIN && resumeGame) {
-
+    if (gameState == MAIN) {
       if (tutorialArrowPosition < initialTutorialArrowPosition) {
         tutorialArrowPosition += 4;
         moveGso(&arrow, tutorialArrowPosition, arrowVerticalPosition);
         moveGso(&aButton, tutorialArrowPosition - 3, 80);
       }
-
 
       move_bkg(scrollPositionX, 0);
       if (scrollPositionX < 255 - screenScrollShift) {
@@ -338,7 +346,6 @@ void main()
         scrollPositionX = 255 - scrollPositionX;
       }
 
-
       if (scrollPositionX > firstPipeRerenderPoint && scrollPositionX <= firstPipeRerenderPoint + screenScrollShift) {
         randomLevel1 = pipeRandomLevel();
         drawPipe(27, randomLevel1);
@@ -346,41 +353,51 @@ void main()
       if (scrollPositionX > secondPipeRerenderPoint && scrollPositionX <= secondPipeRerenderPoint + screenScrollShift) {
         randomLevel2 = pipeRandomLevel();
         drawPipe(10, randomLevel2);
-        needToCheckPipeCollision = 1;
+        needToCheckPipeCollision = TRUE;
       }
 
       if (j & J_A && !delay) {
-        yd = gh - y;
+        yd = GRAPHICS_HEIGHT - y;
         time_backup = clock();
         delaying = clock() + JUMP_DELAY;
         delay = TRUE;
       }
 
-      if (clock() > delaying)
+      if (clock() > delaying) {
         delay = FALSE;
+      }
       t = clock() - time_backup;
-      dx0 = v0 * t / DOWNTEMPO_COEFFICIENT;
-      dx1 = g * t * t / DOWNTEMPO_COEFFICIENT / 2;
-      coord =  dx0 - dx1;
-      vcoord = coord;
-      y = yd + vcoord;
-      y = gh - y;
+      y = getPlayerYPos(t, yd);
 
-      moveGso(&player, x, y);
+      moveGso(&player, playerXPosition, y);
 
-      if (needToCheckPipeCollision == 0) {
+      if (needToCheckPipeCollision == FALSE) {
         resume = checkCollision(y);
       } else if (scrollPositionX >= startFirstPipeCollisionX && scrollPositionX <= endFirstPipeCollisionX) {
-        if (checkPipeCollision(y, randomLevel2) == 1) {
-          resume = 0;
+        if (checkPipeCollision(y, randomLevel2) == TRUE) {
+          resume = FALSE;
         }
       } else if (scrollPositionX >= startSecondPipeCollisionX && scrollPositionX <= endSecondPipeCollisionX) {
-        if (checkPipeCollision(y, randomLevel1) == 1) {
-          resume = 0;
+        if (checkPipeCollision(y, randomLevel1) == TRUE) {
+          resume = FALSE;
         }
       } else {
         resume = checkCollision(y);
       }
+
+      if (resume == FALSE) {
+        gameState = FAIL;
+        yd = GRAPHICS_HEIGHT - y;
+        time_backup = clock();
+      }
+    }
+
+    if (gameState == FAIL) {
+      // printf("sdf");
+      t = clock() - time_backup;
+      y = getPlayerYPos(t, yd);
+
+      moveGso(&player, playerXPosition, y);
     }
 
     wait_vbl_done();

@@ -214,3 +214,133 @@ const unsigned char flbottomtop_tile_data[] ={
   0xFF,0xFF,0xFF,0xFF,0x01,0xFF,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,
   0xFF,0xFF,0xFF,0xFF,0xBE,0xFF,0xAE,0x1E,0xAE,0x1E,0xAE,0x1E,0xAE,0x1E,0xAE,0x1E
 };
+
+// ///////////////////////
+// //                   //
+// //  File Attributes  //
+// //                   //
+// ///////////////////////
+
+// Filename: ab.png
+// Pixel Width: 16px
+// Pixel Height: 16px
+
+// /////////////////
+// //             //
+// //  Constants  //
+// //             //
+// /////////////////
+
+const int ab_tile_map_size = 0x04;
+const int ab_tile_map_width = 0x02;
+const int ab_tile_map_height = 0x02;
+
+const int ab_tile_data_size = 0x40;
+const int ab_tile_count = 0x04;
+
+// ////////////////
+// //            //
+// //  Map Data  //
+// //            //
+// ////////////////
+
+const unsigned char ab_map_data[] ={
+  0x00,0x01,0x02,0x03
+};
+
+// /////////////////
+// //             //
+// //  Tile Data  //
+// //             //
+// /////////////////
+
+const unsigned char ab_tile_data[] ={
+  0x07,0x07,0x18,0x18,0x20,0x20,0x43,0x43,0x47,0x47,0x8E,0x8E,0x8C,0x8C,0x8C,0x8C,
+  0xC0,0xC0,0x30,0x30,0x08,0x08,0x84,0x84,0xC4,0xC4,0xE2,0xE2,0x62,0x62,0x62,0x62,
+  0x8F,0x8F,0x8F,0x8F,0xCC,0xCC,0x4C,0x4C,0x60,0x60,0x38,0x38,0x1F,0x1F,0x07,0x07,
+  0xE2,0xE2,0xE2,0xE2,0x66,0x66,0x64,0x64,0x0C,0x0C,0x38,0x38,0xF0,0xF0,0xC0,0xC0};
+
+  // ///////////////////////
+  // //                   //
+  // //  File Attributes  //
+  // //                   //
+  // ///////////////////////
+
+  // Filename: abd.png
+  // Pixel Width: 16px
+  // Pixel Height: 8px
+
+  // /////////////////
+  // //             //
+  // //  Constants  //
+  // //             //
+  // /////////////////
+
+  const int abd_tile_map_size = 0x02;
+  const int abd_tile_map_width = 0x02;
+  const int abd_tile_map_height = 0x01;
+
+  const int abd_tile_data_size = 0x20;
+  const int abd_tile_count = 0x02;
+
+  // ////////////////
+  // //            //
+  // //  Map Data  //
+  // //            //
+  // ////////////////
+
+  const unsigned char abd_map_data[] ={
+    0x00,0x01
+  };
+
+  // /////////////////
+  // //             //
+  // //  Tile Data  //
+  // //             //
+  // /////////////////
+
+  const unsigned char abd_tile_data[] ={
+    0x8F,0x8F,0x8F,0x8F,0x4C,0x4C,0x4C,0x4C,0x20,0x20,0x18,0x18,0x07,0x07,0x00,0x00,
+    0xE2,0xE2,0xE2,0xE2,0x64,0x64,0x64,0x64,0x08,0x08,0x30,0x30,0xC0,0xC0,0x00,0x00};
+
+  // ///////////////////////
+  // //                   //
+  // //  File Attributes  //
+  // //                   //
+  // ///////////////////////
+
+  // Filename: arrow.png
+  // Pixel Width: 8px
+  // Pixel Height: 8px
+
+  // /////////////////
+  // //             //
+  // //  Constants  //
+  // //             //
+  // /////////////////
+
+  const int arrow_tile_map_size = 0x01;
+  const int arrow_tile_map_width = 0x01;
+  const int arrow_tile_map_height = 0x01;
+
+  const int arrow_tile_data_size = 0x10;
+  const int arrow_tile_count = 0x01;
+
+  // ////////////////
+  // //            //
+  // //  Map Data  //
+  // //            //
+  // ////////////////
+
+  const unsigned char arrow_map_data[] ={
+    0x00
+  };
+
+  // /////////////////
+  // //             //
+  // //  Tile Data  //
+  // //             //
+  // /////////////////
+
+  const unsigned char arrow_tile_data[] ={
+    0x18,0x18,0x3C,0x3C,0x7E,0x7E,0xFF,0xFF,0x3C,0x3C,0x3C,0x3C,0x3C,0x3C,0x3C,0x3C};

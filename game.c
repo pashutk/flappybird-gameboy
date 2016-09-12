@@ -222,13 +222,16 @@ UINT8 checkCollision(DWORD y) {
 
 UINT8 checkPipeCollision(DWORD y, INT8 level) {
   if (y < level * 8 + flbird_tile_map_height * 8 || y > level * 8 + pipeGap * 8) {
-    // printf("%d\n", level);
-    // printf("%d\n", y);
     return 1;
   } else {
     return 0;
   }
 }
+
+enum GameState {
+  TUTORIAL,
+  MAIN
+};
 
 void main()
 {
@@ -261,13 +264,24 @@ void main()
   UINT8 screenScrollShift = 4;
   UBYTE randomLevel1;
   UBYTE randomLevel2;
+  BOOLEAN resumeGame = TRUE;
+  const UINT8 initialTutorialArrowPosition = 176;
+  UINT8 tutorialArrowPosition = initialTutorialArrowPosition;
+  const UINT8 tutorialArrowShownPosition = 140;
+  const int arrowVerticalPosition = 68;
+
+  enum GameState gameState = TUTORIAL;
 
   UINT8 playerWidth = flbird_tile_map_width;
   UINT8 playerHeight = flbird_tile_map_height;
   UINT8 *playerTileDataPointer = &flbird_tile_data;
   GameSpriteObject player;
+  GameSpriteObject arrow;
+  GameSpriteObject aButton;
 
   newGso(&player, playerWidth, playerHeight, playerTileDataPointer, &lastFreeTile);
+  newGso(&arrow, arrow_tile_map_width, arrow_tile_map_height, &arrow_tile_data, &lastFreeTile);
+  newGso(&aButton, ab_tile_map_width, ab_tile_map_height, &ab_tile_data, &lastFreeTile);
 
   set_bkg_data(1, flbody_tile_count, flbody_tile_data);
   set_bkg_data(5, flbottomtop_tile_count, flbottomtop_tile_data);
@@ -285,57 +299,90 @@ void main()
   startSecondPipeCollisionX = 255 - 40 - x - 3 * 4;
   endSecondPipeCollisionX = startSecondPipeCollisionX + 40 + 2 * 8;
 
+  moveGso(&arrow, tutorialArrowPosition, arrowVerticalPosition);
+  moveGso(&aButton, 168, 80);
+
   while(resume) {
-    move_bkg(scrollPositionX, 0);
-    if (scrollPositionX < 255 - screenScrollShift) {
-      scrollPositionX += screenScrollShift;
-    } else {
-      scrollPositionX = 255 - scrollPositionX;
-    }
-
-
-    if (scrollPositionX > firstPipeRerenderPoint && scrollPositionX <= firstPipeRerenderPoint + screenScrollShift) {
-      randomLevel1 = pipeRandomLevel();
-      drawPipe(27, randomLevel1);
-    }
-    if (scrollPositionX > secondPipeRerenderPoint && scrollPositionX <= secondPipeRerenderPoint + screenScrollShift) {
-      randomLevel2 = pipeRandomLevel();
-      drawPipe(10, randomLevel2);
-      needToCheckPipeCollision = 1;
-    }
-
+    // Main loop
     j = joypad();
-    if (j & J_A && !delay) {
-      yd = gh - y;
-      time_backup = clock();
-      delaying = clock() + JUMP_DELAY;
-      delay = TRUE;
+
+    if (gameState == TUTORIAL) {
+      if (tutorialArrowPosition > tutorialArrowShownPosition) {
+        tutorialArrowPosition -= 4;
+        moveGso(&arrow, tutorialArrowPosition, arrowVerticalPosition);
+        moveGso(&aButton, tutorialArrowPosition - 3, 80);
+      }
+
+      if (j & J_A && !delay) {
+        time_backup = clock();
+        delaying = clock() + JUMP_DELAY;
+        delay = TRUE;
+        gameState = MAIN;
+      }
     }
 
-    if (clock() > delaying)
-      delay = FALSE;
-    t = clock() - time_backup;
-    dx0 = v0 * t / DOWNTEMPO_COEFFICIENT;
-    dx1 = g * t * t / DOWNTEMPO_COEFFICIENT / 2;
-    coord =  dx0 - dx1;
-    vcoord = coord;
-    y = yd + vcoord;
-    y = gh - y;
+    // Game loop
+    if (gameState == MAIN && resumeGame) {
 
-    moveGso(&player, x, y);
+      if (tutorialArrowPosition < initialTutorialArrowPosition) {
+        tutorialArrowPosition += 4;
+        moveGso(&arrow, tutorialArrowPosition, arrowVerticalPosition);
+        moveGso(&aButton, tutorialArrowPosition - 3, 80);
+      }
 
-    if (needToCheckPipeCollision == 0) {
-      resume = checkCollision(y);
-    } else if (scrollPositionX >= startFirstPipeCollisionX && scrollPositionX <= endFirstPipeCollisionX) {
-      if (checkPipeCollision(y, randomLevel2) == 1) {
-        resume = 0;
+
+      move_bkg(scrollPositionX, 0);
+      if (scrollPositionX < 255 - screenScrollShift) {
+        scrollPositionX += screenScrollShift;
+      } else {
+        scrollPositionX = 255 - scrollPositionX;
       }
-    } else if (scrollPositionX >= startSecondPipeCollisionX && scrollPositionX <= endSecondPipeCollisionX) {
-      if (checkPipeCollision(y, randomLevel1) == 1) {
-        resume = 0;
+
+
+      if (scrollPositionX > firstPipeRerenderPoint && scrollPositionX <= firstPipeRerenderPoint + screenScrollShift) {
+        randomLevel1 = pipeRandomLevel();
+        drawPipe(27, randomLevel1);
       }
-    } else {
-      resume = checkCollision(y);
+      if (scrollPositionX > secondPipeRerenderPoint && scrollPositionX <= secondPipeRerenderPoint + screenScrollShift) {
+        randomLevel2 = pipeRandomLevel();
+        drawPipe(10, randomLevel2);
+        needToCheckPipeCollision = 1;
+      }
+
+      if (j & J_A && !delay) {
+        yd = gh - y;
+        time_backup = clock();
+        delaying = clock() + JUMP_DELAY;
+        delay = TRUE;
+      }
+
+      if (clock() > delaying)
+        delay = FALSE;
+      t = clock() - time_backup;
+      dx0 = v0 * t / DOWNTEMPO_COEFFICIENT;
+      dx1 = g * t * t / DOWNTEMPO_COEFFICIENT / 2;
+      coord =  dx0 - dx1;
+      vcoord = coord;
+      y = yd + vcoord;
+      y = gh - y;
+
+      moveGso(&player, x, y);
+
+      if (needToCheckPipeCollision == 0) {
+        resume = checkCollision(y);
+      } else if (scrollPositionX >= startFirstPipeCollisionX && scrollPositionX <= endFirstPipeCollisionX) {
+        if (checkPipeCollision(y, randomLevel2) == 1) {
+          resume = 0;
+        }
+      } else if (scrollPositionX >= startSecondPipeCollisionX && scrollPositionX <= endSecondPipeCollisionX) {
+        if (checkPipeCollision(y, randomLevel1) == 1) {
+          resume = 0;
+        }
+      } else {
+        resume = checkCollision(y);
+      }
     }
+
+    wait_vbl_done();
   }
 }

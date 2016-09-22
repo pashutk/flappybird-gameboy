@@ -247,7 +247,7 @@ void flush_row(UINT8 row) {
   for (i = 0; i < 32; i++) {
     bkg_tiles[i] = 0;
   }
-  set_bkg_tiles(0, row, 31, 1, bkg_tiles);
+  set_bkg_tiles(0, row, 32, 1, bkg_tiles);
 }
 
 void flush_bkg() {
@@ -382,6 +382,7 @@ BOOLEAN blackify_back() {
       tile_num = 75;
       break;
     case 5:
+      step = 0;
       return TRUE;
   }
 
@@ -606,7 +607,23 @@ void main() {
     if (current_game_state == TRANSITION_TO_RETRY) {
       move_gso(&player, 200, 200);
       if (blackify_back() == TRUE) {
-        
+        delay(500);
+        current_game_state = TUTORIAL;
+        move_gso(&tutorial_arrow, tutorial_arrow_position_x, tutorial_arrow_position_y);
+        move_gso(&tutorial_a_button, 168, 80);
+
+        player_position_x = 0;
+        player_position_y = 144-50;
+        yd = 50;
+        time_backup = 0;
+        delaying = 0;
+        jump_is_delayed = FALSE;
+        pipe_collision_check_is_needed = FALSE;
+
+        flush_bkg();
+        draw_land();
+        draw_title();
+        move_bkg(0, 160);
       }
     }
 

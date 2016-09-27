@@ -359,31 +359,24 @@ BOOLEAN blackify_back() {
   static INT8 step = 0;
   UINT8 i;
   UINT8 tiles[20];
+  UINT8 steps[] = {
+    71,
+    72,
+    73,
+    74,
+    75
+  };
   UINT8 tile_num;
 
   delay(100);
 
   move_bkg(0, 0);
 
-  switch (step) {
-    case 0:
-      tile_num = 71;
-      break;
-    case 1:
-      tile_num = 72;
-      break;
-    case 2:
-      tile_num = 73;
-      break;
-    case 3:
-      tile_num = 74;
-      break;
-    case 4:
-      tile_num = 75;
-      break;
-    case 5:
-      step = 0;
-      return TRUE;
+  if (step < sizeof(steps)) {
+    tile_num = steps[step];
+  } else {
+    step = 0;
+    return TRUE;
   }
 
   for (i = 0; i < 20; i++) {
@@ -396,6 +389,18 @@ BOOLEAN blackify_back() {
   step++;
 
   return FALSE;
+}
+
+void dynamic_set_bkg_data(INT16 tile_count, UINT8 *tile_data) {
+  // use 1 because 0 tile should be empty tile
+  static INT16 last_free_tile_num = 1;
+
+  set_bkg_data(last_free_tile_num, tile_count, tile_data);
+  last_free_tile_num += tile_count;
+}
+
+void interrupt_LCD() {
+  HIDE_WIN;
 }
 
 void main() {
@@ -419,6 +424,7 @@ void main() {
   UINT16 tutorial_arrow_position_y = 68;
   BOOLEAN was_collision_flag = FALSE;
   INT8 tutorial_step_counter = 0;
+  UINT8 test[31*31];
 
   enum game_states current_game_state = TRANSITION_TO_TITLE;
   game_sprite_object player;
@@ -429,7 +435,9 @@ void main() {
   new_gso(&tutorial_arrow, arrow_tile_map_width, arrow_tile_map_height, &arrow_tile_data, &last_free_tile);
   new_gso(&tutorial_a_button, ab_tile_map_width, ab_tile_map_height, &ab_tile_data, &last_free_tile);
 
-  set_bkg_data(1, flbody_tile_count, flbody_tile_data);
+  dynamic_set_bkg_data(flbody_tile_count, flbody_tile_data);
+
+  // set_bkg_data(1, flbody_tile_count, flbody_tile_data);
   set_bkg_data(5, flbottomtop_tile_count, flbottomtop_tile_data);
   set_bkg_data(18, fltopbottom_tile_count, fltopbottom_tile_data);
   set_bkg_data(33, land_tile_count, land_tile_data);
@@ -448,18 +456,48 @@ void main() {
   set_bkg_data(74, fourdots_tile_count, fourdots_tile_data);
   set_bkg_data(75, black_tile_count, black_tile_data);
 
+  set_win_data(76, num_0_tile_count, num_0_tile_data);
+  set_win_data(77, num_1_tile_count, num_1_tile_data);
+  set_win_data(78, num_2_tile_count, num_2_tile_data);
+  set_win_data(79, num_3_tile_count, num_3_tile_data);
+  set_win_data(80, num_4_tile_count, num_4_tile_data);
+  set_win_data(81, num_5_tile_count, num_5_tile_data);
+  set_win_data(82, num_6_tile_count, num_6_tile_data);
+  set_win_data(83, num_7_tile_count, num_7_tile_data);
+  set_win_data(84, num_8_tile_count, num_8_tile_data);
+  set_win_data(85, num_9_tile_count, num_9_tile_data);
 
   flush_bkg();
 
+  STAT_REG = 0x45;
+  LYC_REG = 0x08;            //  Fire LCD Interupt on the 8th scan line
+
+  disable_interrupts();
+
   SPRITES_8x8;
   SHOW_BKG;
+  SHOW_WIN;
   SHOW_SPRITES;
   DISPLAY_ON;
+
+  add_LCD(interrupt_LCD);
+  enable_interrupts();
+
+  set_interrupts(VBL_IFLAG | LCD_IFLAG);
 
   draw_land();
 
   draw_title();
   move_bkg(0, 160);
+
+  move_win(0, 0);
+  for (i = 0; i < 31; i++) {
+    test[i] = 78;
+  }
+  for (i = 0; i < 18; i++) {
+    set_win_tiles(0, i, 20, 1, test);
+  }
+  i = 0;
 
   first_pipe_collision_zone_start_x = 10 * 8 - (player_position_x + (3 * 4));
   first_pipe_collision_zone_end_x = first_pipe_collision_zone_start_x + 40 + 2 * 8;
@@ -477,6 +515,8 @@ void main() {
 
     // TODO: one pressing – one jump
     j = joypad();
+
+    SHOW_WIN;
 
     if (current_game_state == TRANSITION_TO_TITLE) {
       if (move_title_in() == TRUE) {

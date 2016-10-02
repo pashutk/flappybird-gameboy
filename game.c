@@ -21,6 +21,8 @@
 #define TUTORIAL_ARROW_INITIAL_POSITION_Y 176
 #define TUTORIAL_ARROW_SHOWN_POSITION_Y 120
 
+UBYTE *RAMPtr;
+
 INT16 abs(INT16 num) {
   if(num < 0)
     return -num;
@@ -43,7 +45,8 @@ enum game_states {
   TUTORIAL,
   MAIN,
   FAIL,
-  TRANSITION_TO_RETRY
+  TRANSITION_TO_RETRY,
+  RETRY
 };
 
 enum moving_out_state {
@@ -101,107 +104,109 @@ void move_gso(game_sprite_object *gso,
   }
 }
 
+// Returns tile number for 0-9
+UINT8 get_tile_num_for_number(UINT8 number) {
+  return 76 + number;
+}
+
+void fill_pipe_row_with_numbers(UINT8 *row, UINT8 row_number, UINT16 number) {
+  const UINT8 first_order = number % 10;
+  row[row_number + 3] = get_tile_num_for_number(first_order);
+  if (number >= 10) {
+    row[row_number + 2] = get_tile_num_for_number(((number - first_order) % 100) / 10);
+  }
+  if (number >= 100) {
+    row[row_number + 1] = get_tile_num_for_number(((number - first_order) % 1000) / 100);
+  }
+}
+
 // TODO: increase render speed by using line-by-line drawing (vertical)
-void draw_pipe(UINT8 x, INT8 level) {
+void draw_pipe(UINT8 x, INT8 level, UINT16 pipe_num) {
   const INT8 cap_height = fltopbottom_tile_map_height;
-  INT8 i, j;
+  const INT8 middle_level = GRAPHICS_HEIGHT / SPRITE_HEIGHT / 2 / 2;
+  INT8 j;
   UINT8 pipe_tiles[GRAPHICS_HEIGHT / SPRITE_HEIGHT * PIPE_WIDTH];
   UINT8 tile_num = 0;
+  UINT8 row_num;
 
   for (j = 0; j != 18; j++) {
-    for (i = 0; i != PIPE_WIDTH; i++) {
-      tile_num = 0;
-      if (j + cap_height <= level || j > level + PIPE_GAP + cap_height) {
-        // Draw pipe body
-        if (i == 0) {
-          tile_num = 1;
-        } else if (i == 1 || i == 2) {
-          tile_num = 2;
-        } else if (i == 3) {
-          tile_num = 3;
-        } else if (i == 4) {
-          tile_num = 4;
+    row_num = PIPE_WIDTH * j;
+    if (j + cap_height <= level || j > level + PIPE_GAP + cap_height) {
+      // Draw pipe body
+      pipe_tiles[row_num] = 1;
+      pipe_tiles[row_num + 1] = pipe_tiles[row_num + 2] = 2;
+      pipe_tiles[row_num + 3] = 3;
+      pipe_tiles[row_num + 4] = 4;
+    } else if (j <= level && j > level - cap_height) {
+      // Draw top pipe cap
+      if (j + 2 == level) {
+        pipe_tiles[row_num] = tile_num = 18;
+        pipe_tiles[row_num + 1] = tile_num = 19;
+        pipe_tiles[row_num + 2] = tile_num = 20;
+        pipe_tiles[row_num + 3] = tile_num = 21;
+        pipe_tiles[row_num + 4] = tile_num = 22;
+      } else if (j + 1 == level) {
+        pipe_tiles[row_num] = 23;
+        pipe_tiles[row_num + 1] = 24;
+        pipe_tiles[row_num + 2] = 25;
+        pipe_tiles[row_num + 3] = 25;
+        pipe_tiles[row_num + 4] = 26;
+        if (level > middle_level) {
+          fill_pipe_row_with_numbers(pipe_tiles, row_num, pipe_num);
         }
-      } else if (j <= level && j > level - cap_height) {
-        // Draw top pipe cap
-        if (j + 2 == level) {
-          if (i == 0) {
-            tile_num = 18;
-          } else if (i == 1) {
-            tile_num = 19;
-          } else if (i == 2) {
-            tile_num = 20;
-          } else if (i == 3) {
-            tile_num = 21;
-          } else if (i == 4) {
-            tile_num = 22;
-          }
-        } else if (j + 1 == level) {
-          if (i == 0) {
-            tile_num = 23;
-          } else if (i == 1) {
-            tile_num = 24;
-          } else if (i == 2) {
-            tile_num = 25;
-          } else if (i == 3) {
-            tile_num = 25;
-          } else if (i == 4) {
-            tile_num = 26;
-          }
-
-        } else if (j == level) {
-          if (i == 0) {
-            tile_num = 27;
-          } else if (i == 1) {
-            tile_num = 28;
-          } else if (i == 2) {
-            tile_num = 28;
-          } else if (i == 3) {
-            tile_num = 29;
-          } else if (i == 4) {
-            tile_num = 30;
-          }
-        }
-      } else if (j > level + PIPE_GAP && j <= level + PIPE_GAP + cap_height) {
-        // Draw bottom pipe cap
-        if (j == level + PIPE_GAP + 1) {
-          if (i == 0) {
-            tile_num = 5;
-          } else if (i == 3) {
-            tile_num = 7;
-          } else if (i == 4) {
-            tile_num = 8;
-          } else if (i == 1 || i == 2) {
-            tile_num = 6;
-          }
-        } else if (j == level + PIPE_GAP + 2) {
-          if (i == 0) {
-            tile_num = 9;
-          } else if (i == 3) {
-            tile_num = 11;
-          } else if (i == 4) {
-            tile_num = 12;
-          } else if (i == 1 || i == 2) {
-            tile_num = 10;
-          }
-        } else if (j == level + PIPE_GAP + 3) {
-          if (i == 0) {
-            tile_num = 13;
-          } else if (i == 1) {
-            tile_num = 14;
-          } else if (i == 2) {
-            tile_num = 15;
-          } else if (i == 3) {
-            tile_num = 16;
-          } else if (i == 4) {
-            tile_num = 17;
-          }
-        }
+      } else if (j == level) {
+        pipe_tiles[row_num] = 27;
+        pipe_tiles[row_num + 1] = pipe_tiles[row_num + 2] = 28;
+        pipe_tiles[row_num + 3] = 29;
+        pipe_tiles[row_num + 4] = 30;
       }
-      pipe_tiles[PIPE_WIDTH * j + i] = tile_num;
+    } else if (j > level + PIPE_GAP && j <= level + PIPE_GAP + cap_height) {
+      // Draw bottom pipe cap
+      if (j == level + PIPE_GAP + 1) {
+        pipe_tiles[row_num] = 5;
+        pipe_tiles[row_num + 1] = pipe_tiles[row_num + 2] = 6;
+        pipe_tiles[row_num + 3] = 7;
+        pipe_tiles[row_num + 4] = 8;
+      } else if (j == level + PIPE_GAP + 2) {
+        pipe_tiles[row_num] = 9;
+        pipe_tiles[row_num + 1] = pipe_tiles[row_num + 2] = 10;
+        pipe_tiles[row_num + 3] = 11;
+        pipe_tiles[row_num + 4] = 12;
+        if (level <= middle_level) {
+          fill_pipe_row_with_numbers(pipe_tiles, row_num, pipe_num);
+        }
+      } else if (j == level + PIPE_GAP + 3) {
+        pipe_tiles[row_num] = 13;
+        pipe_tiles[row_num + 1] = 14;
+        pipe_tiles[row_num + 2] = 15;
+        pipe_tiles[row_num + 3] = 16;
+        pipe_tiles[row_num + 4] = 17;
+      }
+    } else {
+      pipe_tiles[row_num] =
+          pipe_tiles[row_num + 1] =
+          pipe_tiles[row_num + 2] =
+          pipe_tiles[row_num + 3] =
+          pipe_tiles[row_num + 4] = 0;
     }
   }
-  set_bkg_tiles(x, 0, PIPE_WIDTH, 18, pipe_tiles);
+  set_bkg_tiles(x, 0, PIPE_WIDTH, GRAPHICS_HEIGHT / SPRITE_HEIGHT, pipe_tiles);
+}
+
+void flush_row(UINT8 row) {
+  UINT8 i = 0;
+  UINT8 bkg_tiles[31];
+  for (i = 0; i < 32; i++) {
+    bkg_tiles[i] = 0;
+  }
+  set_bkg_tiles(0, row, 32, 1, bkg_tiles);
+}
+
+void flush_bkg() {
+  UINT8 i = 0;
+  for (i = 0; i < 32; i++) {
+    flush_row(i);
+  }
 }
 
 void draw_title() {
@@ -241,20 +246,24 @@ void draw_land() {
   set_bkg_tiles(0, 17, 32, 1, tiles);
 }
 
-void flush_row(UINT8 row) {
-  UINT8 i = 0;
-  UINT8 bkg_tiles[31];
-  for (i = 0; i < 32; i++) {
-    bkg_tiles[i] = 0;
-  }
-  set_bkg_tiles(0, row, 32, 1, bkg_tiles);
-}
+void draw_result(UINT16 result) {
+  UINT8 text_tiles[6 * 3];
+  UINT8 i;
 
-void flush_bkg() {
-  UINT8 i = 0;
-  for (i = 0; i < 32; i++) {
-    flush_row(i);
+  for (i = 0; i < 18; i++) {
+    text_tiles[i] = 0;
   }
+
+  fill_pipe_row_with_numbers(text_tiles, 12, result);
+
+  text_tiles[0] = 66;
+  text_tiles[1] = 67;
+  text_tiles[2] = 68;
+  text_tiles[3] = 86;
+  text_tiles[4] = 87;
+  text_tiles[5] = 69;
+
+  set_bkg_tiles(7, 7, 6, 3, text_tiles);
 }
 
 UINT8 get_random_pipe_level() {
@@ -284,13 +293,13 @@ BOOLEAN check_bottom_collision(DWORD y) {
 }
 
 BOOLEAN check_pipe_collision(DWORD y, INT8 level) {
-  const UINT8 player_height = flbird_tile_map_height;
-  if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
-      y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
-    return TRUE;
-  } else {
+  // const UINT8 player_height = flbird_tile_map_height;
+  // if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
+  //     y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
+  //   return TRUE;
+  // } else {
     return FALSE;
-  }
+  // }
 }
 
 INT16 get_player_y_pos(UINT8 t, UINT8 yd) {
@@ -424,12 +433,24 @@ void main() {
   UINT16 tutorial_arrow_position_y = 68;
   BOOLEAN was_collision_flag = FALSE;
   INT8 tutorial_step_counter = 0;
-  UINT8 test[31*31];
+  UINT16 pipe_number = 1;
+  UINT16 current_score = 0;
 
   enum game_states current_game_state = TRANSITION_TO_TITLE;
   game_sprite_object player;
   game_sprite_object tutorial_arrow;
   game_sprite_object tutorial_a_button;
+
+  ENABLE_RAM_MBC1;
+
+  RAMPtr = (UBYTE *)0xAF00;
+
+  // printf("Hex number -> 0x%x", RAMPtr[0]);
+
+  RAMPtr[0]++;
+
+  // delay(2000);
+
 
   new_gso(&player, flbird_tile_map_width, flbird_tile_map_height, &flbird_tile_data, &last_free_tile);
   new_gso(&tutorial_arrow, arrow_tile_map_width, arrow_tile_map_height, &arrow_tile_data, &last_free_tile);
@@ -456,48 +477,53 @@ void main() {
   set_bkg_data(74, fourdots_tile_count, fourdots_tile_data);
   set_bkg_data(75, black_tile_count, black_tile_data);
 
-  set_win_data(76, num_0_tile_count, num_0_tile_data);
-  set_win_data(77, num_1_tile_count, num_1_tile_data);
-  set_win_data(78, num_2_tile_count, num_2_tile_data);
-  set_win_data(79, num_3_tile_count, num_3_tile_data);
-  set_win_data(80, num_4_tile_count, num_4_tile_data);
-  set_win_data(81, num_5_tile_count, num_5_tile_data);
-  set_win_data(82, num_6_tile_count, num_6_tile_data);
-  set_win_data(83, num_7_tile_count, num_7_tile_data);
-  set_win_data(84, num_8_tile_count, num_8_tile_data);
-  set_win_data(85, num_9_tile_count, num_9_tile_data);
+  set_bkg_data(76, num_0_tile_count, num_0_tile_data);
+  set_bkg_data(77, num_1_tile_count, num_1_tile_data);
+  set_bkg_data(78, num_2_tile_count, num_2_tile_data);
+  set_bkg_data(79, num_3_tile_count, num_3_tile_data);
+  set_bkg_data(80, num_4_tile_count, num_4_tile_data);
+  set_bkg_data(81, num_5_tile_count, num_5_tile_data);
+  set_bkg_data(82, num_6_tile_count, num_6_tile_data);
+  set_bkg_data(83, num_7_tile_count, num_7_tile_data);
+  set_bkg_data(84, num_8_tile_count, num_8_tile_data);
+  set_bkg_data(85, num_9_tile_count, num_9_tile_data);
+
+  set_bkg_data(86, u_tile_count, u_tile_data);
+  set_bkg_data(87, l_tile_count, l_tile_data);
 
   flush_bkg();
 
-  STAT_REG = 0x45;
-  LYC_REG = 0x08;            //  Fire LCD Interupt on the 8th scan line
+  // Interupts causes freezes, bad idea
 
-  disable_interrupts();
+  // STAT_REG = 0x45;
+  // LYC_REG = 0x08;            //  Fire LCD Interupt on the 8th scan line
+
+  // disable_interrupts();
 
   SPRITES_8x8;
   SHOW_BKG;
-  SHOW_WIN;
+  // SHOW_WIN;
   SHOW_SPRITES;
   DISPLAY_ON;
 
-  add_LCD(interrupt_LCD);
-  enable_interrupts();
+  // add_LCD(interrupt_LCD);
+  // enable_interrupts();
 
-  set_interrupts(VBL_IFLAG | LCD_IFLAG);
+  // set_interrupts(VBL_IFLAG | LCD_IFLAG);
 
   draw_land();
 
   draw_title();
   move_bkg(0, 160);
 
-  move_win(0, 0);
-  for (i = 0; i < 31; i++) {
-    test[i] = 78;
-  }
-  for (i = 0; i < 18; i++) {
-    set_win_tiles(0, i, 20, 1, test);
-  }
-  i = 0;
+  // move_win(0, 0);
+  // for (i = 0; i < 31; i++) {
+  //   test[i] = 0;
+  // }
+  // for (i = 0; i < 18; i++) {
+  //   set_win_tiles(0, i, 20, 1, test);
+  // }
+  // i = 0;
 
   first_pipe_collision_zone_start_x = 10 * 8 - (player_position_x + (3 * 4));
   first_pipe_collision_zone_end_x = first_pipe_collision_zone_start_x + 40 + 2 * 8;
@@ -516,7 +542,7 @@ void main() {
     // TODO: one pressing – one jump
     j = joypad();
 
-    SHOW_WIN;
+    // SHOW_WIN;
 
     if (current_game_state == TRANSITION_TO_TITLE) {
       if (move_title_in() == TRUE) {
@@ -558,13 +584,18 @@ void main() {
       if (player_position_x < 50) {
         player_position_x += 4;
         move_gso(&player, player_position_x, player_position_y);
+      } else {
+        player_position_x = 50;
+        move_gso(&player, player_position_x, player_position_y);
       }
 
-      if (j & J_A && !jump_is_delayed) {
+      if (j & J_A && !jump_is_delayed && player_position_x == 50) {
         time_backup = clock();
         delaying = clock() + JUMP_DELAY;
         jump_is_delayed = TRUE;
         scroll_position_x = 0;
+        pipe_number = 1;
+        current_score = 0;
         current_game_state = MAIN;
       }
     }
@@ -585,11 +616,11 @@ void main() {
 
       if (scroll_position_x > FIRST_PIPE_POSITION_X && scroll_position_x <= FIRST_PIPE_POSITION_X + GAME_BKG_SCROLL_STEP) {
         second_pipe_current_level = get_random_pipe_level();
-        draw_pipe(27, second_pipe_current_level);
+        draw_pipe(27, second_pipe_current_level, pipe_number++);
       }
       if (scroll_position_x > SECOND_PIPE_POSITION_X && scroll_position_x <= SECOND_PIPE_POSITION_X + GAME_BKG_SCROLL_STEP) {
         first_pipe_current_level = get_random_pipe_level();
-        draw_pipe(10, first_pipe_current_level);
+        draw_pipe(10, first_pipe_current_level, pipe_number++);
         pipe_collision_check_is_needed = TRUE;
       }
 
@@ -622,6 +653,14 @@ void main() {
         was_collision_flag = check_collision(player_position_y);
       }
 
+      if (((scroll_position_x > first_pipe_collision_zone_end_x &&
+          scroll_position_x <= first_pipe_collision_zone_end_x + GAME_BKG_SCROLL_STEP) ||
+          (scroll_position_x > second_pipe_collision_zone_end_x &&
+          scroll_position_x <= second_pipe_collision_zone_end_x + GAME_BKG_SCROLL_STEP)) &&
+          pipe_collision_check_is_needed) {
+        current_score++;
+      }
+
       if (was_collision_flag == TRUE) {
         delay(FAIL_STEP_DELAY);
         current_game_state = FAIL;
@@ -644,26 +683,32 @@ void main() {
       }
     }
 
+    if (current_game_state == RETRY) {
+      draw_result(current_score);
+      delay(2000);
+      current_game_state = TUTORIAL;
+      move_gso(&tutorial_arrow, tutorial_arrow_position_x, tutorial_arrow_position_y);
+      move_gso(&tutorial_a_button, 168, 80);
+
+      player_position_x = 0;
+      player_position_y = 144-50;
+      yd = 50;
+      time_backup = 0;
+      delaying = 0;
+      jump_is_delayed = FALSE;
+      pipe_collision_check_is_needed = FALSE;
+
+      flush_bkg();
+      draw_land();
+      draw_title();
+      move_bkg(0, 160);
+    }
+
     if (current_game_state == TRANSITION_TO_RETRY) {
       move_gso(&player, 200, 200);
       if (blackify_back() == TRUE) {
-        delay(500);
-        current_game_state = TUTORIAL;
-        move_gso(&tutorial_arrow, tutorial_arrow_position_x, tutorial_arrow_position_y);
-        move_gso(&tutorial_a_button, 168, 80);
-
-        player_position_x = 0;
-        player_position_y = 144-50;
-        yd = 50;
-        time_backup = 0;
-        delaying = 0;
-        jump_is_delayed = FALSE;
-        pipe_collision_check_is_needed = FALSE;
-
         flush_bkg();
-        draw_land();
-        draw_title();
-        move_bkg(0, 160);
+        current_game_state = RETRY;
       }
     }
 

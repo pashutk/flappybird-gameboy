@@ -1386,3 +1386,87 @@ const unsigned char land_tile_data[] ={
 
   const unsigned char num_9_tile_data[] ={
     0x00,0x00,0x3C,0x3C,0x24,0x24,0x3C,0x3C,0x04,0x04,0x04,0x04,0x3C,0x3C,0x00,0x00};
+
+  // ///////////////////////
+  // //                   //
+  // //  File Attributes  //
+  // //                   //
+  // ///////////////////////
+
+  // Filename: u.png
+  // Pixel Width: 8px
+  // Pixel Height: 8px
+
+  // /////////////////
+  // //             //
+  // //  Constants  //
+  // //             //
+  // /////////////////
+
+  const int u_tile_map_size = 0x01;
+  const int u_tile_map_width = 0x01;
+  const int u_tile_map_height = 0x01;
+
+  const int u_tile_data_size = 0x10;
+  const int u_tile_count = 0x01;
+
+  // ////////////////
+  // //            //
+  // //  Map Data  //
+  // //            //
+  // ////////////////
+
+  const unsigned char u_map_data[] ={
+    0x00
+  };
+
+  // /////////////////
+  // //             //
+  // //  Tile Data  //
+  // //             //
+  // /////////////////
+
+  const unsigned char u_tile_data[] ={
+    0x00,0x00,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x44,0x38,0x38,0x00,0x00};
+
+  // ///////////////////////
+  // //                   //
+  // //  File Attributes  //
+  // //                   //
+  // ///////////////////////
+
+  // Filename: l.png
+  // Pixel Width: 8px
+  // Pixel Height: 8px
+
+  // /////////////////
+  // //             //
+  // //  Constants  //
+  // //             //
+  // /////////////////
+
+  const int l_tile_map_size = 0x01;
+  const int l_tile_map_width = 0x01;
+  const int l_tile_map_height = 0x01;
+
+  const int l_tile_data_size = 0x10;
+  const int l_tile_count = 0x01;
+
+  // ////////////////
+  // //            //
+  // //  Map Data  //
+  // //            //
+  // ////////////////
+
+  const unsigned char l_map_data[] ={
+    0x00
+  };
+
+  // /////////////////
+  // //             //
+  // //  Tile Data  //
+  // //             //
+  // /////////////////
+
+  const unsigned char l_tile_data[] ={
+    0x00,0x00,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x7C,0x7C,0x00,0x00};

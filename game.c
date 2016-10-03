@@ -8,6 +8,7 @@
 
 #include "tiledata.h"
 
+#define NON_VOLATILE_MEMORY_ADDRESS 0xAF00
 #define PIPE_GAP 8
 #define JUMP_DELAY 15
 #define SPRITE_HEIGHT 8
@@ -21,7 +22,8 @@
 #define TUTORIAL_ARROW_INITIAL_POSITION_Y 176
 #define TUTORIAL_ARROW_SHOWN_POSITION_Y 120
 
-UBYTE *RAMPtr;
+UINT8 *RAMPtr;
+UINT16 high_score_backup = 0;
 
 INT16 abs(INT16 num) {
   if(num < 0)
@@ -124,10 +126,15 @@ void fill_pipe_row_with_numbers(UINT8 *row, UINT8 row_number, UINT16 number) {
 void draw_pipe(UINT8 x, INT8 level, UINT16 pipe_num) {
   const INT8 cap_height = fltopbottom_tile_map_height;
   const INT8 middle_level = GRAPHICS_HEIGHT / SPRITE_HEIGHT / 2 / 2;
+  UINT8 opt_shift = 0;
   INT8 j;
   UINT8 pipe_tiles[GRAPHICS_HEIGHT / SPRITE_HEIGHT * PIPE_WIDTH];
   UINT8 tile_num = 0;
   UINT8 row_num;
+
+  if (x == 27) {
+    opt_shift = 1;
+  }
 
   for (j = 0; j != 18; j++) {
     row_num = PIPE_WIDTH * j;
@@ -183,11 +190,50 @@ void draw_pipe(UINT8 x, INT8 level, UINT16 pipe_num) {
         pipe_tiles[row_num + 4] = 17;
       }
     } else {
-      pipe_tiles[row_num] =
-          pipe_tiles[row_num + 1] =
-          pipe_tiles[row_num + 2] =
-          pipe_tiles[row_num + 3] =
-          pipe_tiles[row_num + 4] = 0;
+      if (j == 11) {
+        pipe_tiles[row_num] = 90 + opt_shift;
+        pipe_tiles[row_num + 1] = 91 + opt_shift;
+        pipe_tiles[row_num + 2] = 92 + opt_shift;
+        pipe_tiles[row_num + 3] = 93 + opt_shift;
+        pipe_tiles[row_num + 4] = 94 + opt_shift;
+      } else if (j == 12) {
+        pipe_tiles[row_num] = 98 + opt_shift;
+        pipe_tiles[row_num + 1] = 99 + opt_shift;
+        pipe_tiles[row_num + 2] = 100 + opt_shift;
+        pipe_tiles[row_num + 3] = 101 + opt_shift;
+        pipe_tiles[row_num + 4] = 102 + opt_shift;
+      } else if (j == 13) {
+        pipe_tiles[row_num] = 106 + opt_shift;
+        pipe_tiles[row_num + 1] = 107 + opt_shift;
+        pipe_tiles[row_num + 2] = 108 + opt_shift;
+        pipe_tiles[row_num + 3] = 109 + opt_shift;
+        pipe_tiles[row_num + 4] = 110 + opt_shift;
+      } else if (j == 14) {
+        pipe_tiles[row_num] = 114 + opt_shift;
+        pipe_tiles[row_num + 1] = 115 + opt_shift;
+        pipe_tiles[row_num + 2] = 116 + opt_shift;
+        pipe_tiles[row_num + 3] = 117 + opt_shift;
+        pipe_tiles[row_num + 4] = 118 + opt_shift;
+      } else if (j == 15) {
+        pipe_tiles[row_num] = 122 + opt_shift;
+        pipe_tiles[row_num + 1] = 123 + opt_shift;
+        pipe_tiles[row_num + 2] = 124 + opt_shift;
+        pipe_tiles[row_num + 3] = 125 + opt_shift;
+        pipe_tiles[row_num + 4] = 126 + opt_shift;
+      } else if (j == 16) {
+        pipe_tiles[row_num] =
+            pipe_tiles[row_num + 1] =
+            pipe_tiles[row_num + 2] =
+            pipe_tiles[row_num + 3] =
+            pipe_tiles[row_num + 4] = 137;
+      } else {
+        pipe_tiles[row_num] =
+            pipe_tiles[row_num + 1] =
+            pipe_tiles[row_num + 2] =
+            pipe_tiles[row_num + 3] =
+            pipe_tiles[row_num + 4] = 0;
+      }
+
     }
   }
   set_bkg_tiles(x, 0, PIPE_WIDTH, GRAPHICS_HEIGHT / SPRITE_HEIGHT, pipe_tiles);
@@ -237,24 +283,60 @@ void draw_title() {
 
 void draw_land() {
   UINT8 i;
-  UINT8 tiles[32];
+  UINT8 tiles[48];
 
   for (i = 0; i < 32; i+=2) {
     tiles[i] = 33;
     tiles[i+1] = 34;
   }
   set_bkg_tiles(0, 17, 32, 1, tiles);
+
+  for (i = 0; i < 48; i++) {
+    tiles[i] = i + 89;
+  }
+
+  for (i = 0; i < 4; i++) {
+    set_bkg_tiles(i * 8 + 1, 11, 8, 5, tiles);
+  }
+
+  tiles[0] = 128;
+  set_bkg_tiles(0, 15, 1, 1, tiles);
+
+  for (i = 0; i < 32; i++) {
+    tiles[i] = 137;
+  };
+  set_bkg_tiles(0, 16, 32, 1, tiles);
 }
 
 void draw_result(UINT16 result) {
-  UINT8 text_tiles[6 * 3];
+  UINT8 text_tiles[6 * 7];
   UINT8 i;
+  UINT8 best;
+  UINT16 buffer;
 
-  for (i = 0; i < 18; i++) {
+  buffer = (UINT8) RAMPtr[0];
+  if (buffer == 255) {
+    best = 0;
+  } else {
+    best = buffer;
+  }
+
+  // hack for emulators that cant acceess to nv ram
+  if (best == 0 && high_score_backup != 0) {
+    best = high_score_backup;
+  }
+
+  if ((UINT8) result > best) {
+    high_score_backup = result;
+    RAMPtr[0] = result;
+  }
+
+  for (i = 0; i < 42; i++) {
     text_tiles[i] = 0;
   }
 
-  fill_pipe_row_with_numbers(text_tiles, 12, result);
+  fill_pipe_row_with_numbers(text_tiles, 14, result);
+  fill_pipe_row_with_numbers(text_tiles, 38, best);
 
   text_tiles[0] = 66;
   text_tiles[1] = 67;
@@ -263,7 +345,12 @@ void draw_result(UINT16 result) {
   text_tiles[4] = 87;
   text_tiles[5] = 69;
 
-  set_bkg_tiles(7, 7, 6, 3, text_tiles);
+  text_tiles[24] = 88;
+  text_tiles[25] = 67;
+  text_tiles[26] = 68;
+  text_tiles[27] = 69;
+
+  set_bkg_tiles(7, 5, 6, 7, text_tiles);
 }
 
 UINT8 get_random_pipe_level() {
@@ -293,13 +380,14 @@ BOOLEAN check_bottom_collision(DWORD y) {
 }
 
 BOOLEAN check_pipe_collision(DWORD y, INT8 level) {
-  // const UINT8 player_height = flbird_tile_map_height;
-  // if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
-  //     y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
-  //   return TRUE;
-  // } else {
+  const UINT8 player_height = flbird_tile_map_height;
+  // printf("%d %d\n", y, level);
+  if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
+      y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
+    return TRUE;
+  } else {
     return FALSE;
-  // }
+  }
 }
 
 INT16 get_player_y_pos(UINT8 t, UINT8 yd) {
@@ -412,6 +500,54 @@ void interrupt_LCD() {
   HIDE_WIN;
 }
 
+BOOLEAN cheat_code_inputed(UINT8 *code_buttons, UINT8 sizeof_code_buttons) {
+  const UINT8 max_delay = 10;
+  UINT8 joypad_value;
+  static UINT8 counter = 0;
+  static UINT8 code_current_button_position = 0;
+  static BOOLEAN was_last_input_empty = FALSE;
+
+  if (counter != max_delay) {
+    counter++;
+  }
+
+  if (counter == max_delay) {
+    code_current_button_position = 0;
+  }
+
+  joypad_value = joypad();
+
+  if (joypad_value != 0) {
+    counter = 0;
+    if (was_last_input_empty == TRUE) {
+      if (joypad_value & code_buttons[code_current_button_position]) {
+        code_current_button_position++;
+      } else {
+        code_current_button_position = 0;
+      }
+    }
+    if (code_current_button_position == sizeof_code_buttons) {
+      counter = 0;
+      code_current_button_position = 0;
+      return TRUE;
+    }
+    was_last_input_empty = FALSE;
+  } else {
+    was_last_input_empty = TRUE;
+  }
+  return FALSE;
+}
+
+BOOLEAN reset_cheat_inputed() {
+  const UINT8 code_buttons[] = {
+    J_A,
+    J_B,
+    J_B,
+    J_B
+  };
+  return cheat_code_inputed(&code_buttons, sizeof(code_buttons));
+}
+
 void main() {
   UINT8 player_position_x = 50, j;
   DWORD player_position_y = 0;
@@ -435,6 +571,7 @@ void main() {
   INT8 tutorial_step_counter = 0;
   UINT16 pipe_number = 1;
   UINT16 current_score = 0;
+  UINT8 ttt[5];
 
   enum game_states current_game_state = TRANSITION_TO_TITLE;
   game_sprite_object player;
@@ -443,14 +580,7 @@ void main() {
 
   ENABLE_RAM_MBC1;
 
-  RAMPtr = (UBYTE *)0xAF00;
-
-  // printf("Hex number -> 0x%x", RAMPtr[0]);
-
-  RAMPtr[0]++;
-
-  // delay(2000);
-
+  RAMPtr = (UINT8 *)NON_VOLATILE_MEMORY_ADDRESS;
 
   new_gso(&player, flbird_tile_map_width, flbird_tile_map_height, &flbird_tile_data, &last_free_tile);
   new_gso(&tutorial_arrow, arrow_tile_map_width, arrow_tile_map_height, &arrow_tile_data, &last_free_tile);
@@ -490,6 +620,10 @@ void main() {
 
   set_bkg_data(86, u_tile_count, u_tile_data);
   set_bkg_data(87, l_tile_count, l_tile_data);
+  set_bkg_data(88, b_tile_count, b_tile_data);
+
+  set_bkg_data(89, bg_tile_count, bg_tile_data);
+  set_bkg_data(137, grass_tile_count, grass_tile_data);
 
   flush_bkg();
 
@@ -510,6 +644,14 @@ void main() {
   // enable_interrupts();
 
   // set_interrupts(VBL_IFLAG | LCD_IFLAG);
+
+  for (i = 0; i < 5; i++) {
+    ttt[i] = 1;
+  }
+
+  // fill_pipe_row_with_numbers(ttt, 0, (INT16) RAMPtr[0]);
+
+  // set_bkg_tiles(2, 2, 5, 1, ttt);
 
   draw_land();
 
@@ -554,6 +696,12 @@ void main() {
       if (j & J_START) {
         initrand(DIV_REG);
         current_game_state = TRANSITION_TO_TUTORIAL;
+      }
+
+      if (reset_cheat_inputed() == TRUE) {
+        RAMPtr[0] = 0;
+        resume = FALSE;
+        reset();
       }
     }
 

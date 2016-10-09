@@ -379,14 +379,14 @@ BOOLEAN check_bottom_collision(DWORD y) {
 }
 
 BOOLEAN check_pipe_collision(DWORD y, INT8 level) {
-  // const UINT8 player_height = flbird_tile_map_height;
-  // // printf("%d %d\n", y, level);
-  // if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
-  //     y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
-  //   return TRUE;
-  // } else {
+  const UINT8 player_height = flbird_tile_map_height;
+
+  if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
+      y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
+    return TRUE;
+  } else {
     return FALSE;
-  // }
+  }
 }
 
 INT16 get_player_y_pos(UINT8 t, UINT8 yd) {
@@ -674,7 +674,6 @@ void main() {
   INT8 tutorial_step_counter = 0;
   UINT16 pipe_number = 1;
   UINT16 current_score = 0;
-  UINT8 ttt[5];
 
   enum game_states current_game_state = TRANSITION_TO_TITLE;
   game_sprite_object player;
@@ -684,17 +683,6 @@ void main() {
   NR52_REG = 0x80;
   NR51_REG = 0xFF;
   NR50_REG = 0x77;
-  //
-  // NR10_REG = 0x1E;
-  // NR11_REG = 0x10;
-  // NR12_REG = 0xF3;
-  // NR13_REG = 0x00;
-  // NR14_REG = 0x87;
-
-
-  // // Mute channel 1 (there are other ways to do this)
-  // NR12 = 0;
-  // NR14 = 0x80;
 
   ENABLE_RAM_MBC1;
 
@@ -762,14 +750,6 @@ void main() {
   // enable_interrupts();
 
   // set_interrupts(VBL_IFLAG | LCD_IFLAG);
-
-  for (i = 0; i < 5; i++) {
-    ttt[i] = 1;
-  }
-
-  // fill_pipe_row_with_numbers(ttt, 0, (INT16) RAMPtr[0]);
-
-  // set_bkg_tiles(2, 2, 5, 1, ttt);
 
   draw_land();
 

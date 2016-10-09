@@ -1,4 +1,3 @@
-#include <gb/gb.h>
 #include <stdio.h>
 #include <time.h>
 #include <gb/drawing.h>
@@ -17,7 +16,7 @@
 
 #define FIRST_PIPE_POSITION_X 0
 #define SECOND_PIPE_POSITION_X 128
-#define GAME_BKG_SCROLL_STEP 4
+#define GAME_BKG_SCROLL_STEP 2
 #define FAIL_STEP_DELAY 400
 #define TUTORIAL_ARROW_INITIAL_POSITION_Y 176
 #define TUTORIAL_ARROW_SHOWN_POSITION_Y 120
@@ -380,20 +379,20 @@ BOOLEAN check_bottom_collision(DWORD y) {
 }
 
 BOOLEAN check_pipe_collision(DWORD y, INT8 level) {
-  const UINT8 player_height = flbird_tile_map_height;
-  // printf("%d %d\n", y, level);
-  if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
-      y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
-    return TRUE;
-  } else {
+  // const UINT8 player_height = flbird_tile_map_height;
+  // // printf("%d %d\n", y, level);
+  // if (y < level * SPRITE_HEIGHT + player_height * SPRITE_HEIGHT ||
+  //     y > level * SPRITE_HEIGHT + PIPE_GAP * SPRITE_HEIGHT) {
+  //   return TRUE;
+  // } else {
     return FALSE;
-  }
+  // }
 }
 
 INT16 get_player_y_pos(UINT8 t, UINT8 yd) {
-  const INT32 v0 = 200;
-  const INT8 g = 10;
-  INT32 dx0, dx1;
+  const UINT16 v0 = 200;
+  const UINT8 g = 10;
+  UINT16 dx0, dx1;
 
   dx0 = v0 * t / DOWNTEMPO_COEFFICIENT;
   dx1 = g * t * t / DOWNTEMPO_COEFFICIENT / 2;
@@ -421,10 +420,10 @@ BOOLEAN move_title_in() {
 
 BOOLEAN move_title_out() {
   static enum moving_out_state current_state = SIDE;
-  static UINT32 bkg_position_x = 128;
+  static UINT16 bkg_position_x = 128;
   static UINT16 bkg_position_y = 160;
-  static UINT32 counter = 0;
-  UINT32 delta = 0;
+  static UINT16 counter = 0;
+  UINT16 delta = 0;
   const UINT8 downtempo = 50;
 
   if (current_state == DONE) {
@@ -548,6 +547,110 @@ BOOLEAN reset_cheat_inputed() {
   return cheat_code_inputed(&code_buttons, sizeof(code_buttons));
 }
 
+void stop_playing_intro() {
+  NR12_REG = 0x00;
+  NR22_REG = 0x00;
+}
+
+void play_intro() {
+  static UINT8 counter = 0;
+
+  if (counter == 127) {
+    return;
+  }
+
+  if (counter == 0) {
+    NR10_REG = 0x7C;
+    NR11_REG = 0xB0;
+    NR12_REG = 0x8F;
+    NR13_REG = 0x10;
+    NR14_REG = 0x84;
+
+    NR21_REG = 0x60;
+    NR22_REG = 0x8F;
+    NR23_REG = 0x12;
+    NR24_REG = 0x84;
+  }
+
+  if (clock() % 8) {
+    counter++;
+  }
+
+  if (counter == 100) {
+    stop_playing_intro();
+    counter = 127;
+  }
+}
+
+void play_fail() {
+  NR41_REG = 0x01;
+  NR42_REG = 0xA2;
+  NR43_REG = 0x45;
+  NR44_REG = 0xC0;
+}
+
+void play_jump() {
+  NR10_REG = 0x36;
+  NR11_REG = 0x10;
+  NR12_REG = 0x83;
+  NR13_REG = 0x00;
+  NR14_REG = 0x87;
+}
+
+void play_c3() {
+  NR21_REG = 0x82;
+  NR22_REG = 0x81;
+  NR23_REG = 0x10;
+  NR24_REG = 0xC0;
+}
+
+void play_c4() {
+  NR21_REG = 0x82;
+  NR22_REG = 0x81;
+  NR23_REG = 0xF0;
+  NR24_REG = 0xC1;
+}
+
+void play_hh() {
+  NR41_REG = 0x02;
+  NR42_REG = 0x61;
+  NR43_REG = 0x10;
+  NR44_REG = 0xC0;
+}
+
+void play_snare() {
+  NR41_REG = 0x02;
+  NR42_REG = 0x61;
+  NR43_REG = 0x42;
+  NR44_REG = 0xC0;
+}
+
+void play_music() {
+  static UINT8 step = 0;
+
+  if (clock() % 8 != 0) {
+    return;
+  }
+
+  play_hh();
+
+  if (step == 1 || step == 6) {
+    play_c4();
+  } else {
+    play_c3();
+  }
+
+  if (step == 3) {
+      play_snare();
+  }
+
+  step++;
+
+  if (step == 8) {
+    step = 0;
+  }
+}
+
 void main() {
   UINT8 player_position_x = 50, j;
   DWORD player_position_y = 0;
@@ -577,6 +680,21 @@ void main() {
   game_sprite_object player;
   game_sprite_object tutorial_arrow;
   game_sprite_object tutorial_a_button;
+
+  NR52_REG = 0x80;
+  NR51_REG = 0xFF;
+  NR50_REG = 0x77;
+  //
+  // NR10_REG = 0x1E;
+  // NR11_REG = 0x10;
+  // NR12_REG = 0xF3;
+  // NR13_REG = 0x00;
+  // NR14_REG = 0x87;
+
+
+  // // Mute channel 1 (there are other ways to do this)
+  // NR12 = 0;
+  // NR14 = 0x80;
 
   ENABLE_RAM_MBC1;
 
@@ -632,7 +750,7 @@ void main() {
   // STAT_REG = 0x45;
   // LYC_REG = 0x08;            //  Fire LCD Interupt on the 8th scan line
 
-  // disable_interrupts();
+  disable_interrupts();
 
   SPRITES_8x8;
   SHOW_BKG;
@@ -678,6 +796,8 @@ void main() {
   player_position_x = 0;
   player_position_y = 144-50;
 
+  play_intro();
+
   while(resume) {
     // Main loop
 
@@ -690,6 +810,8 @@ void main() {
       if (move_title_in() == TRUE) {
         current_game_state = TITLE;
       };
+
+      play_intro();
     }
 
     if (current_game_state == TITLE) {
@@ -703,15 +825,20 @@ void main() {
         resume = FALSE;
         reset();
       }
+
+      play_intro();
     }
 
     if (current_game_state == TRANSITION_TO_TUTORIAL) {
+      stop_playing_intro();
+
       if (move_title_out() == TRUE) {
         current_game_state = TUTORIAL;
       };
     }
 
     if (current_game_state == TUTORIAL) {
+      play_music();
       if (tutorial_arrow_position_x > TUTORIAL_ARROW_SHOWN_POSITION_Y) {
         tutorial_arrow_position_x -= 4;
         move_gso(&tutorial_a_button, tutorial_arrow_position_x - 3, 80);
@@ -744,11 +871,13 @@ void main() {
         scroll_position_x = 0;
         pipe_number = 1;
         current_score = 0;
+        play_jump();
         current_game_state = MAIN;
       }
     }
 
     if (current_game_state == MAIN) {
+      play_music();
       if (tutorial_arrow_position_x < TUTORIAL_ARROW_INITIAL_POSITION_Y) {
         tutorial_arrow_position_x += 4;
         move_gso(&tutorial_arrow, tutorial_arrow_position_x, tutorial_arrow_position_y);
@@ -777,6 +906,7 @@ void main() {
         time_backup = clock();
         delaying = clock() + JUMP_DELAY;
         jump_is_delayed = TRUE;
+        play_jump();
       }
 
       if (clock() > delaying) {
@@ -810,6 +940,7 @@ void main() {
       }
 
       if (was_collision_flag == TRUE) {
+        play_fail();
         delay(FAIL_STEP_DELAY);
         current_game_state = FAIL;
         if (player_position_y > GRAPHICS_HEIGHT) {

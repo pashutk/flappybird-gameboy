@@ -2,10 +2,10 @@
 Flappybird-like game for Nintendo Gameboy (Gameboy Original or Gameboy Color).
 
 ## Demo images
-[![](https://github.com/pashutk/flappybird-gameboy/raw/master/launchscreen.png)](https://github.com/pashutk/flappybird-gameboy/raw/master/launchscreen.png)
-[![](https://github.com/pashutk/flappybird-gameboy/raw/master/game.png)](https://github.com/pashutk/flappybird-gameboy/raw/master/game.png)
-[![](https://github.com/pashutk/flappybird-gameboy/raw/master/launchscreen.gif)](https://github.com/pashutk/flappybird-gameboy/raw/master/launchscreen.png)
-[![](https://github.com/pashutk/flappybird-gameboy/raw/master/game.gif)](https://github.com/pashutk/flappybird-gameboy/raw/master/game.png)
+<img src="https://github.com/pashutk/flappybird-gameboy/raw/master/launchscreen.png" width="280" />
+<img src="https://github.com/pashutk/flappybird-gameboy/raw/master/game.png" width="280" />
+<img src="https://github.com/pashutk/flappybird-gameboy/raw/master/launchscreen.gif" width="280" />
+<img src="https://github.com/pashutk/flappybird-gameboy/raw/master/game.gif" width="280" />
 
 ## Build ROM
 To build Gameboy .gb ROM file use [GBDK library](http://gbdk.sourceforge.net/)
